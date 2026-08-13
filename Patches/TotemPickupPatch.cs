@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ComfySentinel.Patches
 {
-    [HarmonyPatch(typeof(Pickable), nameof(Pickable.Interact), new[] { typeof(Humanoid), typeof(bool), typeof(bool) })]
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.Pickup), new[] { typeof(GameObject), typeof(bool), typeof(bool) })]
     internal static class TotemPickupPatch
     {
         private static readonly int GoblinTotemPrefabHash = "GoblinTotem".GetStableHashCode();
@@ -12,52 +12,49 @@ namespace ComfySentinel.Patches
         {
             internal readonly bool Eligible;
             internal readonly Vector3 Origin;
+            internal readonly int TotemCount;
 
-            internal PickupState(bool eligible, Vector3 origin)
+            internal PickupState(bool eligible, Vector3 origin, int totemCount)
             {
                 Eligible = eligible;
                 Origin = origin;
+                TotemCount = totemCount;
             }
         }
 
-        private static void Prefix(Pickable __instance, Humanoid character, bool repeat, ref PickupState __state)
+        private static void Prefix(Humanoid __instance, GameObject go, ref PickupState __state)
         {
             __state = default;
 
-            if (repeat
-                || character != Player.m_localPlayer
-                || __instance == null
-                || __instance.m_itemPrefab == null
-                || __instance.m_itemPrefab.name.GetStableHashCode() != GoblinTotemPrefabHash
-                || __instance.GetEnabled == 0
-                || !__instance.CanBePicked())
+            if (__instance != Player.m_localPlayer || go == null)
             {
                 return;
             }
 
-            ZNetView netView = __instance.GetComponent<ZNetView>();
-            if (netView == null || !netView.IsValid())
+            ItemDrop itemDrop = go.GetComponent<ItemDrop>();
+            if (itemDrop == null)
             {
                 return;
             }
 
-            if (__instance.m_tarPreventsPicking)
+            itemDrop.Load();
+            ItemDrop.ItemData itemData = itemDrop.m_itemData;
+            GameObject itemPrefab = itemData?.m_dropPrefab;
+            if (itemPrefab == null
+                || itemPrefab.name.GetStableHashCode() != GoblinTotemPrefabHash
+                || itemData.m_pickedUp)
             {
-                Floating floating = __instance.GetComponent<Floating>();
-                if (floating != null && floating.IsInTar())
-                {
-                    return;
-                }
+                return;
             }
 
-            __state = new PickupState(true, __instance.transform.position);
+            __state = new PickupState(true, itemDrop.transform.position, Mathf.Max(1, itemData.m_stack));
         }
 
-        private static void Postfix(PickupState __state)
+        private static void Postfix(PickupState __state, ref bool __result)
         {
-            if (__state.Eligible)
+            if (__state.Eligible && __result)
             {
-                ComfySentinelPlugin.StartSonarSession(__state.Origin);
+                ComfySentinelPlugin.GrantTotemSonar(__state.Origin, __state.TotemCount);
             }
         }
     }

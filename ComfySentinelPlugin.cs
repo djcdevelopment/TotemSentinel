@@ -15,11 +15,12 @@ namespace ComfySentinel
     {
         public const string PluginGuid = "comfy.mods.comfysentinel";
         public const string PluginName = "ComfySentinel";
-        public const string PluginVersion = "1.4.0";
+        public const string PluginVersion = "1.5.0";
 
         private const float ScanPulseInterval = 1.0f;
 
         public static ConfigEntry<int> MaxSonarCharges;
+        public static ConfigEntry<int> MaxStoredSonarCharges;
         public static ConfigEntry<float> ScanRadius;
         public static ConfigEntry<KeyCode> PingHotkey;
         public static ConfigEntry<float> StateDuration;
@@ -35,8 +36,12 @@ namespace ComfySentinel
         private static float _nextScanPulseAt;
         private static long _scanCpuTicks;
         private static int _scanPulseCount;
+        private static long _sessionWorldUid;
+        private static bool _deathSuspended;
 
         internal static bool HasActiveSonarSession => _hasActiveSonarSession;
+        internal static int MaximumStoredSonarCharges =>
+            MaxStoredSonarCharges != null ? Math.Max(1, MaxStoredSonarCharges.Value) : 9;
 
         private Harmony _harmony;
         private bool _patchesApplied;
@@ -49,6 +54,14 @@ namespace ComfySentinel
                 3,
                 new ConfigDescription(
                     "Number of camp checks granted by each Fuling Totem. Checks are spent only when the hotkey is pressed.",
+                    new AcceptableValueRange<int>(1, int.MaxValue)));
+
+            MaxStoredSonarCharges = Config.Bind(
+                "Sonar",
+                "MaxStoredSonarCharges",
+                9,
+                new ConfigDescription(
+                    "Maximum number of camp checks that can be banked across multiple newly discovered Fuling Totems.",
                     new AcceptableValueRange<int>(1, int.MaxValue)));
 
             ScanRadius = Config.Bind(
@@ -94,7 +107,8 @@ namespace ComfySentinel
                 TotemAlertCommands.Register();
                 _patchesApplied = true;
                 ZLog.Log(
-                    $"[{PluginName}] Initialized with {MaxSonarCharges.Value} charges, " +
+                    $"[{PluginName}] Initialized with {MaxSonarCharges.Value} charges per totem, " +
+                    $"a {MaximumStoredSonarCharges}-charge storage cap, " +
                     $"a {ScanRadius.Value:0.#}m radius, {StateDuration.Value:0.#}s states, " +
                     $"and a {FinalSummaryDuration.Value:0.#}s final summary.");
             }
@@ -106,12 +120,38 @@ namespace ComfySentinel
 
         private void Update()
         {
+            ZNet znet = ZNet.instance;
+            if (_hasActiveSonarSession
+                && znet != null
+                && _sessionWorldUid != 0L
+                && znet.GetWorldUID() != _sessionWorldUid)
+            {
+                ZLog.Log($"[{PluginName}] Cleared camp checks after the active world changed.");
+                ResetSonarSession();
+            }
+
             Player localPlayer = Player.m_localPlayer;
             if (!localPlayer)
             {
-                ResetSonarSession();
+                if (znet == null)
+                {
+                    ResetSonarSession();
+                }
+                else
+                {
+                    SuspendSonarForDeath();
+                }
+
                 return;
             }
+
+            if (localPlayer.IsDead())
+            {
+                SuspendSonarForDeath();
+                return;
+            }
+
+            ResumeSonarAfterDeath();
 
             if (_scanInProgress)
             {
@@ -177,17 +217,33 @@ namespace ComfySentinel
             return _showAbilityPreview;
         }
 
-        internal static void StartSonarSession(Vector3 origin)
+        internal static void GrantTotemSonar(Vector3 origin, int totemCount)
         {
-            ResetActiveScan();
+            if (totemCount <= 0)
+            {
+                return;
+            }
+
+            RestoreInterruptedScanCharge("a new totem was discovered");
+
+            int previousCharges = _hasActiveSonarSession ? ActiveSonarCharges : 0;
+            long requestedGrant = (long)Math.Max(1, MaxSonarCharges.Value) * totemCount;
+            ActiveSonarCharges = (int)Math.Min(
+                MaximumStoredSonarCharges,
+                Math.Min(int.MaxValue, previousCharges + requestedGrant));
+
+            int addedCharges = ActiveSonarCharges - previousCharges;
             LastScanOrigin = origin;
-            ActiveSonarCharges = Math.Max(1, MaxSonarCharges.Value);
+            _sessionWorldUid = ZNet.instance != null ? ZNet.instance.GetWorldUID() : 0L;
             _hasActiveSonarSession = true;
+            _deathSuspended = false;
             SonarAbilityPanel.Arm();
             ZLog.Log(
-                $"[{PluginName}] Camp checks armed " +
+                $"[{PluginName}] Camp checks granted " +
                 $"origin=({origin.x:0.0},{origin.y:0.0},{origin.z:0.0}) " +
-                $"charges={ActiveSonarCharges} radius={ScanRadius.Value:0.0}m hotkey={PingHotkey.Value}.");
+                $"totems={totemCount} added={addedCharges} " +
+                $"charges={ActiveSonarCharges}/{MaximumStoredSonarCharges} " +
+                $"radius={ScanRadius.Value:0.0}m hotkey={PingHotkey.Value}.");
         }
 
         private static void StartActiveScan()
@@ -275,7 +331,54 @@ namespace ComfySentinel
         {
             ZLog.LogError($"[{PluginName}] A live scan pulse could not access the current local ZDO sector table.");
             ResetActiveScan();
+            SonarAbilityPanel.CancelScan();
             SonarPresenter.ShowScanUnavailableWarning();
+        }
+
+        private static void SuspendSonarForDeath()
+        {
+            if (!_hasActiveSonarSession || _deathSuspended)
+            {
+                return;
+            }
+
+            bool restoredCharge = _scanInProgress;
+            RestoreInterruptedScanCharge("the player died");
+            _deathSuspended = true;
+            SonarAbilityPanel.Suspend();
+            ZLog.Log(
+                $"[{PluginName}] Camp checks preserved through death " +
+                $"charges={ActiveSonarCharges}/{MaximumStoredSonarCharges} " +
+                $"interruptedChargeRestored={restoredCharge}.");
+        }
+
+        private static void ResumeSonarAfterDeath()
+        {
+            if (!_deathSuspended)
+            {
+                return;
+            }
+
+            _deathSuspended = false;
+            SonarAbilityPanel.Resume();
+            ZLog.Log(
+                $"[{PluginName}] Camp checks restored after respawn " +
+                $"charges={ActiveSonarCharges}/{MaximumStoredSonarCharges}.");
+        }
+
+        private static void RestoreInterruptedScanCharge(string reason)
+        {
+            if (!_scanInProgress)
+            {
+                return;
+            }
+
+            ActiveSonarCharges = Math.Min(MaximumStoredSonarCharges, ActiveSonarCharges + 1);
+            ResetActiveScan();
+            SonarAbilityPanel.CancelScan();
+            ZLog.Log(
+                $"[{PluginName}] Interrupted camp check cancelled because {reason}; " +
+                $"one charge was restored.");
         }
 
         private static void ResetActiveScan()
@@ -297,6 +400,8 @@ namespace ComfySentinel
             ActiveSonarCharges = 0;
             LastScanOrigin = Vector3.zero;
             _hasActiveSonarSession = false;
+            _sessionWorldUid = 0L;
+            _deathSuspended = false;
             ResetActiveScan();
             SonarAbilityPanel.Reset();
         }
