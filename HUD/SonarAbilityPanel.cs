@@ -30,7 +30,12 @@ namespace ComfySentinel.HUD
         private static PanelState _state;
         private static SonarScanner.ScanResult _result;
         private static bool _hasResult;
+        private static SonarScanner.ScanResult _resultBeforeScan;
+        private static bool _hadResultBeforeScan;
+        private static bool _hasScanBackup;
         private static bool _dismissed;
+        private static bool _suspended;
+        private static float _suspendedAt;
         private static float _stateStarted;
         private static float _finalScanStarted = -1.0f;
         private static GUIStyle _titleStyle;
@@ -46,22 +51,89 @@ namespace ComfySentinel.HUD
         {
             _result = default;
             _hasResult = false;
+            _hasScanBackup = false;
             _dismissed = false;
+            _suspended = false;
             _finalScanStarted = -1.0f;
             SetState(PanelState.Ready);
         }
 
         internal static void BeginScan(SonarScanner.ScanResult result, int charges)
         {
+            _resultBeforeScan = _result;
+            _hadResultBeforeScan = _hasResult;
+            _hasScanBackup = true;
             _result = result;
             _hasResult = true;
+            _dismissed = false;
+            SetState(PanelState.Scanning);
+        }
+
+        internal static void UpdateScan(SonarScanner.ScanResult result)
+        {
+            if (_state == PanelState.Scanning)
+            {
+                _result = result;
+                _hasResult = true;
+            }
+        }
+
+        internal static void CompleteScan(SonarScanner.ScanResult result, int charges)
+        {
+            _result = result;
+            _hasResult = true;
+            _hasScanBackup = false;
             _dismissed = false;
             if (charges <= 0)
             {
                 _finalScanStarted = Time.unscaledTime;
             }
 
-            SetState(PanelState.Scanning);
+            SetState(result.Fulings > 0 ? PanelState.Found : PanelState.Clear);
+        }
+
+        internal static void CancelScan()
+        {
+            if (_hasScanBackup)
+            {
+                _result = _resultBeforeScan;
+                _hasResult = _hadResultBeforeScan;
+            }
+
+            _hasScanBackup = false;
+            SetState(ComfySentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Hidden);
+        }
+
+        internal static void Suspend()
+        {
+            if (_suspended)
+            {
+                return;
+            }
+
+            _suspended = true;
+            _suspendedAt = Time.unscaledTime;
+        }
+
+        internal static void Resume()
+        {
+            if (!_suspended)
+            {
+                return;
+            }
+
+            float suspendedDuration = Time.unscaledTime - _suspendedAt;
+            if (_finalScanStarted >= 0.0f)
+            {
+                _finalScanStarted += suspendedDuration;
+            }
+
+            _suspended = false;
+            _suspendedAt = 0.0f;
+            SetState(
+                ComfySentinelPlugin.ActiveSonarCharges > 0
+                    ? PanelState.Ready
+                    : (_hasResult ? PanelState.Complete : PanelState.Hidden));
         }
 
         internal static void ShowOutOfRange()
@@ -86,7 +158,12 @@ namespace ComfySentinel.HUD
         {
             _result = default;
             _hasResult = false;
+            _resultBeforeScan = default;
+            _hadResultBeforeScan = false;
+            _hasScanBackup = false;
             _dismissed = false;
+            _suspended = false;
+            _suspendedAt = 0.0f;
             _state = PanelState.Hidden;
             _stateStarted = 0.0f;
             _finalScanStarted = -1.0f;
@@ -94,6 +171,11 @@ namespace ComfySentinel.HUD
 
         internal static void Draw(bool preview)
         {
+            if (_suspended)
+            {
+                return;
+            }
+
             UpdateState();
 
             bool hasUsableSession =
@@ -173,7 +255,7 @@ namespace ComfySentinel.HUD
                     break;
                 case PanelState.Complete:
                     GUI.Label(titleRect, "CHECKS COMPLETE", _titleStyle);
-                    GUI.Label(mainRect, $"0 / {ComfySentinelPlugin.MaxSonarCharges.Value}", _mainStyle);
+                    GUI.Label(mainRect, $"0 / {ComfySentinelPlugin.MaximumStoredSonarCharges}", _mainStyle);
                     GUI.Label(detailRect, $"CLOSES IN {FormatFinalTimeRemaining()}", _detailStyle);
                     DrawCloseButton(card, scale);
                     break;
@@ -203,7 +285,7 @@ namespace ComfySentinel.HUD
         private static void DrawReady(Rect titleRect, Rect mainRect, Rect detailRect)
         {
             int charges = ComfySentinelPlugin.ActiveSonarCharges;
-            int maximum = ComfySentinelPlugin.MaxSonarCharges.Value;
+            int maximum = ComfySentinelPlugin.MaximumStoredSonarCharges;
             GUI.Label(titleRect, "CAMP CHECKS", _titleStyle);
 
             _mainStyle.richText = true;
@@ -288,11 +370,7 @@ namespace ComfySentinel.HUD
 
             float elapsed = Time.unscaledTime - _stateStarted;
             float stateDuration = GetStateDuration();
-            if (_state == PanelState.Scanning && elapsed >= stateDuration)
-            {
-                SetState(_result.Fulings > 0 ? PanelState.Found : PanelState.Clear);
-            }
-            else if ((_state == PanelState.Found || _state == PanelState.Clear) && elapsed >= stateDuration)
+            if ((_state == PanelState.Found || _state == PanelState.Clear) && elapsed >= stateDuration)
             {
                 SetState(ComfySentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
             }
@@ -314,6 +392,7 @@ namespace ComfySentinel.HUD
             }
 
             return _state == PanelState.Ready
+                || _state == PanelState.Scanning
                 || _state == PanelState.Found
                 || _state == PanelState.Clear
                 || _state == PanelState.Complete

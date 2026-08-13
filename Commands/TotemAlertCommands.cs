@@ -104,7 +104,9 @@ namespace ComfySentinel.Commands
                 }
 
                 args.Context?.AddString("ComfySentinel scenario 1 created: totem, three Fuling types, 12 coins, and 8 black metal.");
-                args.Context?.AddString("Close the console, pick the totem to arm 3/3 checks, then press the configured hotkey when ready.");
+                args.Context?.AddString(
+                    $"Close the console, pick up the loose totem to add " +
+                    $"{ComfySentinelPlugin.MaxSonarCharges.Value} checks, then press the configured hotkey when ready.");
                 ZLog.Log($"[{ComfySentinelPlugin.PluginName}] Test scenario 1 created with 7 tracked objects.");
                 return true;
             }
@@ -355,7 +357,8 @@ namespace ComfySentinel.Commands
             context?.AddString($"ComfySentinel {ComfySentinelPlugin.PluginVersion}: running");
             context?.AddString(
                 $"Sonar session: {(ComfySentinelPlugin.HasActiveSonarSession ? "active" : "waiting for a totem")}; " +
-                $"charges: {ComfySentinelPlugin.ActiveSonarCharges}; radius: {ComfySentinelPlugin.ScanRadius.Value:0.#}m; " +
+                $"charges: {ComfySentinelPlugin.ActiveSonarCharges}/{ComfySentinelPlugin.MaximumStoredSonarCharges}; " +
+                $"per totem: {ComfySentinelPlugin.MaxSonarCharges.Value}; radius: {ComfySentinelPlugin.ScanRadius.Value:0.#}m; " +
                 $"hotkey: {ComfySentinelPlugin.PingHotkey.Value}");
             context?.AddString(
                 $"State duration: {ComfySentinelPlugin.StateDuration.Value:0.#}s; " +

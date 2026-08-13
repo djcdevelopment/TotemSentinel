@@ -1,22 +1,27 @@
 # ComfySentinel
 
-ComfySentinel is a standalone client-side BepInEx mod for Valheim that turns a picked-up Fuling Totem into a limited camp-check ability.
+ComfySentinel is a standalone client-side BepInEx mod for Valheim that turns a newly discovered Fuling Totem into a limited camp-check ability.
 
-Picking up a `GoblinTotem` grants three checks. It does not scan immediately, so players can finish an active fight before pressing `V`. Each check searches the original camp radius and reports remaining Fulings plus loose coins and black metal.
+The first successful pickup of a world- or enemy-spawned `GoblinTotem` grants three checks. It does not scan immediately, so players can finish an active fight before pressing `V`. Each check searches the pickup radius and reports remaining Fulings plus loose coins and black metal.
 
 ## Features
 
-- Three configurable camp checks per picked-up Fuling Totem.
+- Three configurable camp checks per newly discovered Fuling Totem, stackable to nine by default.
+- Checks survive death; an in-progress check is cancelled and refunded for respawn.
+- Player-thrown totems cannot grant checks because Valheim marks them as previously picked up.
 - Compact state card beneath the minimap instead of center-screen combat messages.
 - Separate counts for Fulings, Shamans, and Brutes.
 - Loose `Coins` and `BlackMetalScrap` stack totals in the same scan.
 - Ten-second scanning, result, and warning stages by default.
+- One local-memory snapshot per second while scanning, with live replacement counts and no scan RPCs.
 - Persistent gold summary of the previous check.
 - Dismissible final summary that closes automatically after five minutes.
 - Detailed logs for session arming, scan results, range failures, charge use, and scan duration.
 - Allocation-free ZDO sector iteration in the scanner hot path; no LINQ, physics queries, or per-scan reflection.
 
 ComfySentinel only counts memory-hydrated ZDOs within the configured radius. Loot inside containers and player inventories is intentionally excluded.
+
+Live pulses never request sectors, write ZDOs, claim ownership, or contact the server. On multiplayer clients, results are limited to state Valheim has already hydrated naturally. The `totem 1` test harness is the sole feature that intentionally creates networked world objects when run by a host.
 
 ## Installation
 
@@ -29,29 +34,30 @@ The generated configuration is written to `BepInEx/config/comfy.mods.comfysentin
 
 ## Usage
 
-1. Pick up a Fuling Totem to arm the camp checks.
+1. Pick up a newly discovered Fuling Totem to add camp checks.
 2. Return within the configured camp radius when ready.
 3. Press `V` to perform a check.
 
 The default flow is:
 
 ```text
-CAMP CHECKS 3 / 3
+CAMP CHECKS 3 / 9
         ↓ V
-SCANNING
+SCANNING + live local counts
         ↓
 FULINGS FOUND / CAMP CLEAR
         ↓
-CAMP CHECKS 2 / 3 + previous result
+CAMP CHECKS 2 / 9 + previous result
 ```
 
-After the third check, the previous result remains visible with a close button and a five-minute automatic timeout.
+After the final banked check, the previous result remains visible with a close button and a five-minute automatic timeout.
 
 ## Configuration
 
 | Setting | Default | Description |
 | --- | ---: | --- |
 | `MaxSonarCharges` | `3` | Checks granted by each totem. |
+| `MaxStoredSonarCharges` | `9` | Maximum checks banked across newly discovered totems. |
 | `ScanRadius` | `64` | Camp scan radius in metres. |
 | `PingHotkey` | `V` | Key that spends a check. |
 | `StateDuration` | `10` | Seconds for scanning, result, and warning states. |
@@ -67,6 +73,14 @@ Start Valheim with `-console`, enter a local world or a world hosted by your cli
 - `totem clear` removes remaining tracked fixture objects.
 
 The spawn command is rejected on ordinary multiplayer clients. Use the fixture only in a disposable test world; picked-up loot and normal world changes are not undone by `totem clear`.
+
+## Documentation
+
+- [Product documentation](docs/product.md)
+- [Quick start guide](docs/quick-start.md)
+- [Data-flow diagrams](docs/data-flow-diagram.md)
+- [Technical stack](docs/tech-stack.md)
+- [Technical deep dive](docs/technical-deep-dive.md)
 
 ## Building
 
@@ -86,7 +100,7 @@ No Valheim, Unity, Harmony, or BepInEx assemblies are redistributed in this repo
 
 ## Compatibility
 
-ComfySentinel 1.3.0 was built against:
+ComfySentinel 1.5.0 was built against:
 
 - Valheim `0.221.12`
 - BepInEx `5.4.23.3`

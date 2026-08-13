@@ -6,10 +6,15 @@ namespace ComfySentinel.HUD
 {
     internal static class SonarPresenter
     {
-        internal static void PresentScan(Vector3 origin, SonarScanner.ScanResult result, int charges)
+        internal static void BeginScan(Vector3 origin, SonarScanner.ScanResult result, int charges)
         {
             PlayPingEffect(origin);
             SonarAbilityPanel.BeginScan(result, charges);
+        }
+
+        internal static void CompleteScan(SonarScanner.ScanResult result, int charges)
+        {
+            SonarAbilityPanel.CompleteScan(result, charges);
         }
 
         internal static void ShowOutOfRangeWarning()
@@ -42,6 +47,13 @@ namespace ComfySentinel.HUD
                 if (effectPrefab == null)
                 {
                     ZLog.LogWarning($"[{ComfySentinelPlugin.PluginName}] Could not find vfx_WishbonePing.");
+                    return;
+                }
+
+                if (effectPrefab.GetComponentInChildren<ZNetView>(includeInactive: true) != null)
+                {
+                    ZLog.LogWarning(
+                        $"[{ComfySentinelPlugin.PluginName}] Skipped networked vfx_WishbonePing to preserve local-only scanning.");
                     return;
                 }
 
