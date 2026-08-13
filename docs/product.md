@@ -6,6 +6,10 @@ ComfySentinel turns the first successful pickup of a newly discovered Fuling Tot
 
 The player chooses when to scan. Picking up a totem arms the ability but does not scan immediately.
 
+![ComfySentinel camp-check flow from a newly discovered totem through the saved result](images/camp-check-flow.png)
+
+![ComfySentinel live counts clearing on later pulses and becoming the final camp summary](images/live-clear-flow.png)
+
 ## Problem statement
 
 Fuling villages are difficult to inspect during darkness, rain, fog, or an active fight. A missed Fuling can make a camp look clear, while a server rule or background monitor may still treat the village as uncleared. Players also lose loose coins and black metal in the terrain.
