@@ -1,0 +1,25 @@
+# Build output
+bin/
+obj/
+
+# IDE state
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Local build configuration and game files
+Directory.Build.props.user
+*.dll
+*.pdb
+
+# BepInEx/runtime output
+BepInEx/
+*.cfg
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
