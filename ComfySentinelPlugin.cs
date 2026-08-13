@@ -15,7 +15,9 @@ namespace ComfySentinel
     {
         public const string PluginGuid = "comfy.mods.comfysentinel";
         public const string PluginName = "ComfySentinel";
-        public const string PluginVersion = "1.3.0";
+        public const string PluginVersion = "1.4.0";
+
+        private const float ScanPulseInterval = 1.0f;
 
         public static ConfigEntry<int> MaxSonarCharges;
         public static ConfigEntry<float> ScanRadius;
@@ -28,6 +30,11 @@ namespace ComfySentinel
 
         private static bool _hasActiveSonarSession;
         private static bool _showAbilityPreview;
+        private static bool _scanInProgress;
+        private static float _scanStartedAt;
+        private static float _nextScanPulseAt;
+        private static long _scanCpuTicks;
+        private static int _scanPulseCount;
 
         internal static bool HasActiveSonarSession => _hasActiveSonarSession;
 
@@ -106,6 +113,12 @@ namespace ComfySentinel
                 return;
             }
 
+            if (_scanInProgress)
+            {
+                UpdateActiveScan(localPlayer);
+                return;
+            }
+
             if (!_hasActiveSonarSession
                 || Console.IsVisible()
                 || TextInput.IsVisible()
@@ -138,7 +151,7 @@ namespace ComfySentinel
                 return;
             }
 
-            ExecutePing();
+            StartActiveScan();
         }
 
         private void OnDestroy()
@@ -166,6 +179,7 @@ namespace ComfySentinel
 
         internal static void StartSonarSession(Vector3 origin)
         {
+            ResetActiveScan();
             LastScanOrigin = origin;
             ActiveSonarCharges = Math.Max(1, MaxSonarCharges.Value);
             _hasActiveSonarSession = true;
@@ -176,7 +190,7 @@ namespace ComfySentinel
                 $"charges={ActiveSonarCharges} radius={ScanRadius.Value:0.0}m hotkey={PingHotkey.Value}.");
         }
 
-        private static void ExecutePing()
+        private static void StartActiveScan()
         {
             if (ActiveSonarCharges <= 0)
             {
@@ -184,31 +198,98 @@ namespace ComfySentinel
                 return;
             }
 
-            long started = Stopwatch.GetTimestamp();
-            if (!SonarScanner.TryScan(LastScanOrigin, ScanRadius.Value, out SonarScanner.ScanResult result))
+            if (!TryReadLocalPulse(out SonarScanner.ScanResult result, out long elapsedTicks))
             {
                 ZLog.LogError($"[{PluginName}] A sonar scan could not access the current ZDO sector table.");
                 SonarPresenter.ShowScanUnavailableWarning();
                 return;
             }
 
-            double elapsedMilliseconds =
-                (Stopwatch.GetTimestamp() - started) * 1000.0 / Stopwatch.Frequency;
             ActiveSonarCharges--;
-            Player localPlayer = Player.m_localPlayer;
-            double distance = localPlayer != null
-                ? Math.Sqrt((localPlayer.transform.position - LastScanOrigin).sqrMagnitude)
-                : 0.0;
+            _scanInProgress = true;
+            _scanStartedAt = Time.unscaledTime;
+            _nextScanPulseAt = _scanStartedAt + ScanPulseInterval;
+            _scanCpuTicks = elapsedTicks;
+            _scanPulseCount = 1;
+            SonarPresenter.BeginScan(LastScanOrigin, result, ActiveSonarCharges);
+        }
+
+        private static void UpdateActiveScan(Player localPlayer)
+        {
+            float now = Time.unscaledTime;
+            if (now - _scanStartedAt < StateDuration.Value)
+            {
+                if (now < _nextScanPulseAt)
+                {
+                    return;
+                }
+
+                if (!TryReadLocalPulse(out SonarScanner.ScanResult liveResult, out long liveElapsedTicks))
+                {
+                    AbortActiveScan();
+                    return;
+                }
+
+                _scanCpuTicks += liveElapsedTicks;
+                _scanPulseCount++;
+                _nextScanPulseAt = now + ScanPulseInterval;
+                SonarAbilityPanel.UpdateScan(liveResult);
+                return;
+            }
+
+            if (!TryReadLocalPulse(out SonarScanner.ScanResult finalResult, out long finalElapsedTicks))
+            {
+                AbortActiveScan();
+                return;
+            }
+
+            _scanCpuTicks += finalElapsedTicks;
+            _scanPulseCount++;
+            _scanInProgress = false;
+
+            double elapsedMilliseconds = _scanCpuTicks * 1000.0 / Stopwatch.Frequency;
+            double distance = Math.Sqrt((localPlayer.transform.position - LastScanOrigin).sqrMagnitude);
 
             ZLog.Log(
                 $"[{PluginName}] Camp scan complete " +
                 $"origin=({LastScanOrigin.x:0.0},{LastScanOrigin.y:0.0},{LastScanOrigin.z:0.0}) " +
                 $"distance={distance:0.0}m radius={ScanRadius.Value:0.0}m " +
-                $"goblins={result.Goblins} shamans={result.Shamans} brutes={result.Brutes} " +
-                $"fulings={result.Fulings} coins={result.Coins} blackMetal={result.BlackMetal} " +
-                $"charges={ActiveSonarCharges} duration={elapsedMilliseconds:0.000}ms.");
+                $"goblins={finalResult.Goblins} shamans={finalResult.Shamans} brutes={finalResult.Brutes} " +
+                $"fulings={finalResult.Fulings} coins={finalResult.Coins} blackMetal={finalResult.BlackMetal} " +
+                $"charges={ActiveSonarCharges} pulses={_scanPulseCount} " +
+                $"scanCpu={elapsedMilliseconds:0.000}ms source=local-zdo.");
 
-            SonarPresenter.PresentScan(LastScanOrigin, result, ActiveSonarCharges);
+            SonarPresenter.CompleteScan(finalResult, ActiveSonarCharges);
+            ResetActiveScanMetrics();
+        }
+
+        private static bool TryReadLocalPulse(out SonarScanner.ScanResult result, out long elapsedTicks)
+        {
+            long started = Stopwatch.GetTimestamp();
+            bool success = SonarScanner.TryScan(LastScanOrigin, ScanRadius.Value, out result);
+            elapsedTicks = Stopwatch.GetTimestamp() - started;
+            return success;
+        }
+
+        private static void AbortActiveScan()
+        {
+            ZLog.LogError($"[{PluginName}] A live scan pulse could not access the current local ZDO sector table.");
+            ResetActiveScan();
+            SonarPresenter.ShowScanUnavailableWarning();
+        }
+
+        private static void ResetActiveScan()
+        {
+            _scanInProgress = false;
+            ResetActiveScanMetrics();
+        }
+
+        private static void ResetActiveScanMetrics()
+        {
+            _scanStartedAt = 0.0f;
+            _nextScanPulseAt = 0.0f;
+            _scanCpuTicks = 0L;
+            _scanPulseCount = 0;
         }
 
         private static void ResetSonarSession()
@@ -216,6 +297,7 @@ namespace ComfySentinel
             ActiveSonarCharges = 0;
             LastScanOrigin = Vector3.zero;
             _hasActiveSonarSession = false;
+            ResetActiveScan();
             SonarAbilityPanel.Reset();
         }
     }

@@ -11,12 +11,15 @@ Picking up a `GoblinTotem` grants three checks. It does not scan immediately, so
 - Separate counts for Fulings, Shamans, and Brutes.
 - Loose `Coins` and `BlackMetalScrap` stack totals in the same scan.
 - Ten-second scanning, result, and warning stages by default.
+- One local-memory snapshot per second while scanning, with live replacement counts and no scan RPCs.
 - Persistent gold summary of the previous check.
 - Dismissible final summary that closes automatically after five minutes.
 - Detailed logs for session arming, scan results, range failures, charge use, and scan duration.
 - Allocation-free ZDO sector iteration in the scanner hot path; no LINQ, physics queries, or per-scan reflection.
 
 ComfySentinel only counts memory-hydrated ZDOs within the configured radius. Loot inside containers and player inventories is intentionally excluded.
+
+Live pulses never request sectors, write ZDOs, claim ownership, or contact the server. On multiplayer clients, results are limited to state Valheim has already hydrated naturally. The `totem 1` test harness is the sole feature that intentionally creates networked world objects when run by a host.
 
 ## Installation
 
@@ -38,7 +41,7 @@ The default flow is:
 ```text
 CAMP CHECKS 3 / 3
         ↓ V
-SCANNING
+SCANNING + live local counts
         ↓
 FULINGS FOUND / CAMP CLEAR
         ↓
@@ -86,7 +89,7 @@ No Valheim, Unity, Harmony, or BepInEx assemblies are redistributed in this repo
 
 ## Compatibility
 
-ComfySentinel 1.3.0 was built against:
+ComfySentinel 1.4.0 was built against:
 
 - Valheim `0.221.12`
 - BepInEx `5.4.23.3`
