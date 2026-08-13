@@ -4,6 +4,10 @@ ComfySentinel is a standalone client-side BepInEx mod for Valheim that turns a n
 
 The first successful pickup of a world- or enemy-spawned `GoblinTotem` grants three checks. It does not scan immediately, so players can finish an active fight before pressing `V`. Each check searches the pickup radius and reports remaining Fulings plus loose coins and black metal.
 
+![ComfySentinel camp-check flow from a newly discovered totem through the saved result](docs/images/camp-check-flow.png)
+
+![ComfySentinel live counts clearing on later pulses and becoming the final camp summary](docs/images/live-clear-flow.png)
+
 ## Features
 
 - Three configurable camp checks per newly discovered Fuling Totem, stackable to nine by default.
