@@ -53,7 +53,7 @@ The Prefix calls `ItemDrop.Load()` and captures a small `PickupState` before Val
 
 - the humanoid is `Player.m_localPlayer`;
 - the object has an `ItemDrop`;
-- the item's drop-prefab stable hash is `GoblinTotem`;
+- the item is a Fuling Totem, identified internally by Valheim's legacy `GoblinTotem` prefab ID;
 - `ItemData.m_pickedUp` is false;
 - the loose stack count is positive after clamping.
 
@@ -149,11 +149,11 @@ Death is handled differently from a scanner failure. The active window is cancel
 
 ### Cached prefab identities
 
-Stable hashes are cached in static fields for:
+Stable hashes are cached in static fields for the following Fuling categories. Valheim's literal legacy prefab IDs are shown in parentheses because the scanner must match them exactly:
 
-- `Goblin`;
-- `GoblinShaman`;
-- `GoblinBrute`;
+- standard Fuling (`Goblin`);
+- Fuling Shaman (`GoblinShaman`);
+- Fuling Brute (`GoblinBrute`);
 - `Coins`;
 - `BlackMetalScrap`.
 
@@ -253,7 +253,7 @@ This guard favors the network promise over audiovisual feedback if a Valheim upd
 
 The item stand visual uses a ZDO write and `SetVisualItem` RPC. Spawned objects are marked nonpersistent but are still ordinary networked Valheim objects while alive. `totem clear` destroys objects still referenced in the local tracking list. This code is deliberately isolated in `TotemAlertCommands` and is not reachable from normal totem pickup or sonar input.
 
-Interacting with the fixture's pickable proxy makes Valheim produce a normal, never-picked-up `GoblinTotem` ItemDrop. Checks are granted only when that loose item successfully enters the local inventory, which exercises the same provenance patch as a real pedestal or enemy drop.
+Interacting with the fixture's pickable proxy makes Valheim produce a normal, never-picked-up Fuling Totem ItemDrop (internal prefab ID `GoblinTotem`). Checks are granted only when that loose item successfully enters the local inventory, which exercises the same provenance patch as a real pedestal or enemy drop.
 
 ## HUD design
 

@@ -1,0 +1,9 @@
+﻿{
+  "name": "ComfySentinel",
+  "version_number": "1.5.0",
+  "website_url": "https://github.com/djcdevelopment/ComfySentinel",
+  "description": "Player-controlled Fuling Totem camp-check radar & Greed's Gambit wide loot search with risk-vs-reward retribution.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2202"
+  ]
+}

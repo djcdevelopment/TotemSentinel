@@ -25,6 +25,9 @@ namespace ComfySentinel
         public static ConfigEntry<KeyCode> PingHotkey;
         public static ConfigEntry<float> StateDuration;
         public static ConfigEntry<float> FinalSummaryDuration;
+        public static ConfigEntry<float> GreedMultiplier;
+        public static ConfigEntry<float> GreedDuration;
+        public static ConfigEntry<KeyCode> GreedModifierKey;
 
         public static int ActiveSonarCharges = 0;
         public static Vector3 LastScanOrigin = Vector3.zero;
@@ -38,8 +41,11 @@ namespace ComfySentinel
         private static int _scanPulseCount;
         private static long _sessionWorldUid;
         private static bool _deathSuspended;
+        private static bool _isGreedScan;
+        private static float _greedUntil;
 
         internal static bool HasActiveSonarSession => _hasActiveSonarSession;
+        internal static bool IsGreedActive => Time.unscaledTime < _greedUntil;
         internal static int MaximumStoredSonarCharges =>
             MaxStoredSonarCharges != null ? Math.Max(1, MaxStoredSonarCharges.Value) : 9;
 
@@ -93,6 +99,28 @@ namespace ComfySentinel
                 new ConfigDescription(
                     "Seconds after the final scan before the completed camp-check card closes automatically.",
                     new AcceptableValueRange<float>(30.0f, 1800.0f)));
+
+            GreedMultiplier = Config.Bind(
+                "Greed",
+                "GreedMultiplier",
+                3.0f,
+                new ConfigDescription(
+                    "Multiplier applied to scan radius during Greed's Gambit wide loot searches.",
+                    new AcceptableValueRange<float>(1.5f, 5.0f)));
+
+            GreedDuration = Config.Bind(
+                "Greed",
+                "GreedDuration",
+                35.0f,
+                new ConfigDescription(
+                    "Seconds that the Greed's Gambit cursed retribution window lasts after a wide search.",
+                    new AcceptableValueRange<float>(10.0f, 120.0f)));
+
+            GreedModifierKey = Config.Bind(
+                "Controls",
+                "GreedModifierKey",
+                KeyCode.LeftShift,
+                "Modifier key held while pressing PingHotkey to trigger Greed's Gambit wide loot search.");
 
             if (!SonarScanner.Initialize())
             {
@@ -180,7 +208,8 @@ namespace ComfySentinel
                 return;
             }
 
-            float radius = ScanRadius.Value;
+            bool isGreed = Input.GetKey(GreedModifierKey.Value);
+            float radius = isGreed ? ScanRadius.Value * GreedMultiplier.Value : ScanRadius.Value;
             float distanceSquared = (localPlayer.transform.position - LastScanOrigin).sqrMagnitude;
             if (distanceSquared > radius * radius)
             {
@@ -191,7 +220,7 @@ namespace ComfySentinel
                 return;
             }
 
-            StartActiveScan();
+            StartActiveScan(isGreed);
         }
 
         private void OnDestroy()
@@ -246,13 +275,15 @@ namespace ComfySentinel
                 $"radius={ScanRadius.Value:0.0}m hotkey={PingHotkey.Value}.");
         }
 
-        private static void StartActiveScan()
+        private static void StartActiveScan(bool isGreed = false)
         {
             if (ActiveSonarCharges <= 0)
             {
                 SonarPresenter.ShowNoChargesWarning();
                 return;
             }
+
+            _isGreedScan = isGreed;
 
             if (!TryReadLocalPulse(out SonarScanner.ScanResult result, out long elapsedTicks))
             {
@@ -267,7 +298,13 @@ namespace ComfySentinel
             _nextScanPulseAt = _scanStartedAt + ScanPulseInterval;
             _scanCpuTicks = elapsedTicks;
             _scanPulseCount = 1;
-            SonarPresenter.BeginScan(LastScanOrigin, result, ActiveSonarCharges);
+
+            if (isGreed)
+            {
+                ArmGreedState();
+            }
+
+            SonarPresenter.BeginScan(LastScanOrigin, result, ActiveSonarCharges, isGreed);
         }
 
         private static void UpdateActiveScan(Player localPlayer)
@@ -305,13 +342,14 @@ namespace ComfySentinel
 
             double elapsedMilliseconds = _scanCpuTicks * 1000.0 / Stopwatch.Frequency;
             double distance = Math.Sqrt((localPlayer.transform.position - LastScanOrigin).sqrMagnitude);
+            float radius = _isGreedScan ? ScanRadius.Value * GreedMultiplier.Value : ScanRadius.Value;
 
             ZLog.Log(
                 $"[{PluginName}] Camp scan complete " +
                 $"origin=({LastScanOrigin.x:0.0},{LastScanOrigin.y:0.0},{LastScanOrigin.z:0.0}) " +
-                $"distance={distance:0.0}m radius={ScanRadius.Value:0.0}m " +
+                $"distance={distance:0.0}m radius={radius:0.0}m isGreed={_isGreedScan} " +
                 $"goblins={finalResult.Goblins} shamans={finalResult.Shamans} brutes={finalResult.Brutes} " +
-                $"fulings={finalResult.Fulings} coins={finalResult.Coins} blackMetal={finalResult.BlackMetal} " +
+                $"fulings={finalResult.Fulings} coins={finalResult.Coins} blackMetal={finalResult.BlackMetal} valuables={finalResult.Valuables} " +
                 $"charges={ActiveSonarCharges} pulses={_scanPulseCount} " +
                 $"scanCpu={elapsedMilliseconds:0.000}ms source=local-zdo.");
 
@@ -321,8 +359,9 @@ namespace ComfySentinel
 
         private static bool TryReadLocalPulse(out SonarScanner.ScanResult result, out long elapsedTicks)
         {
+            float radius = _isGreedScan ? ScanRadius.Value * GreedMultiplier.Value : ScanRadius.Value;
             long started = Stopwatch.GetTimestamp();
-            bool success = SonarScanner.TryScan(LastScanOrigin, ScanRadius.Value, out result);
+            bool success = SonarScanner.TryScan(LastScanOrigin, radius, out result);
             elapsedTicks = Stopwatch.GetTimestamp() - started;
             return success;
         }
@@ -384,6 +423,7 @@ namespace ComfySentinel
         private static void ResetActiveScan()
         {
             _scanInProgress = false;
+            _isGreedScan = false;
             ResetActiveScanMetrics();
         }
 
@@ -402,8 +442,66 @@ namespace ComfySentinel
             _hasActiveSonarSession = false;
             _sessionWorldUid = 0L;
             _deathSuspended = false;
+            DisarmGreedState();
             ResetActiveScan();
             SonarAbilityPanel.Reset();
+        }
+
+        internal static void ArmGreedState()
+        {
+            _greedUntil = Time.unscaledTime + GreedDuration.Value;
+            ZLog.Log($"[{PluginName}] Greed's Gambit activated for {GreedDuration.Value:0}s. Any damage will enrage the horde!");
+        }
+
+        internal static void DisarmGreedState()
+        {
+            _greedUntil = 0f;
+        }
+
+        internal static void TriggerGreedRetribution(Player localPlayer)
+        {
+            if (!IsGreedActive)
+            {
+                return;
+            }
+
+            _greedUntil = 0f;
+            ZLog.LogWarning($"[{PluginName}] A single scratch triggered Greed's Retribution! Alerting horde across 3x sector.");
+
+            if (localPlayer != null)
+            {
+                localPlayer.Message(MessageHud.MessageType.Center, "<color=#EF4444>CURSED! The Totem's greed awakens the horde!</color>");
+            }
+
+            float huntRadius = ScanRadius.Value * GreedMultiplier.Value;
+            float huntRadiusSq = huntRadius * huntRadius;
+            Vector3 origin = localPlayer != null ? localPlayer.transform.position : LastScanOrigin;
+
+            try
+            {
+                var allAi = BaseAI.GetAllInstances();
+                int alerted = 0;
+                if (allAi != null)
+                {
+                    foreach (var ai in allAi)
+                    {
+                        if (ai == null) continue;
+                        if ((ai.transform.position - origin).sqrMagnitude <= huntRadiusSq)
+                        {
+                            ai.Alert();
+                            ai.SetHuntPlayer(true);
+                            alerted++;
+                        }
+                    }
+                }
+                ZLog.Log($"[{PluginName}] Greed's Retribution: {alerted} creatures alerted.");
+            }
+            catch (Exception ex)
+            {
+                ZLog.LogError($"[{PluginName}] Failed alerting creatures during retribution: {ex}");
+            }
+
+            SonarPresenter.TriggerCursed(GreedDuration.Value);
         }
     }
 }

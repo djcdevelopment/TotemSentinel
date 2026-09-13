@@ -14,16 +14,18 @@ namespace ComfySentinel.Services
             internal readonly int Brutes;
             internal readonly int Coins;
             internal readonly int BlackMetal;
+            internal readonly int Valuables;
 
             internal int Fulings => Goblins + Shamans + Brutes;
 
-            internal ScanResult(int goblins, int shamans, int brutes, int coins, int blackMetal)
+            internal ScanResult(int goblins, int shamans, int brutes, int coins, int blackMetal, int valuables = 0)
             {
                 Goblins = goblins;
                 Shamans = shamans;
                 Brutes = brutes;
                 Coins = coins;
                 BlackMetal = blackMetal;
+                Valuables = valuables;
             }
         }
 
@@ -32,6 +34,11 @@ namespace ComfySentinel.Services
         private static readonly int GoblinBrutePrefabHash = "GoblinBrute".GetStableHashCode();
         private static readonly int CoinsPrefabHash = "Coins".GetStableHashCode();
         private static readonly int BlackMetalScrapPrefabHash = "BlackMetalScrap".GetStableHashCode();
+        private static readonly int RubyPrefabHash = "Ruby".GetStableHashCode();
+        private static readonly int AmberPrefabHash = "Amber".GetStableHashCode();
+        private static readonly int AmberPearlPrefabHash = "AmberPearl".GetStableHashCode();
+        private static readonly int SilverNecklacePrefabHash = "SilverNecklace".GetStableHashCode();
+        private static readonly int GoblinTotemPrefabHash = "GoblinTotem".GetStableHashCode();
 
         private static AccessTools.FieldRef<ZDOMan, List<ZDO>[]> _objectsBySectorRef;
         private static AccessTools.FieldRef<ZDOMan, int> _widthRef;
@@ -74,15 +81,18 @@ namespace ComfySentinel.Services
                 return false;
             }
 
-            Vector2i centerSector = ZoneSystem.GetZone(centerPoint);
+            Vector2s centerSector = ZoneSystem.GetZone(centerPoint);
             float radiusSquared = radius * radius;
             int goblins = 0;
             int shamans = 0;
             int brutes = 0;
             int coins = 0;
             int blackMetal = 0;
+            int valuables = 0;
 
-            for (int sectorY = centerSector.y - 2; sectorY <= centerSector.y + 2; sectorY++)
+            int sectorRadius = Mathf.Clamp(Mathf.CeilToInt(radius / 64.0f) + 1, 2, 5);
+
+            for (int sectorY = centerSector.y - sectorRadius; sectorY <= centerSector.y + sectorRadius; sectorY++)
             {
                 int arrayY = sectorY + halfWidth;
                 if ((uint)arrayY >= (uint)width)
@@ -91,7 +101,7 @@ namespace ComfySentinel.Services
                 }
 
                 int rowStart = arrayY * width;
-                for (int sectorX = centerSector.x - 2; sectorX <= centerSector.x + 2; sectorX++)
+                for (int sectorX = centerSector.x - sectorRadius; sectorX <= centerSector.x + sectorRadius; sectorX++)
                 {
                     int arrayX = sectorX + halfWidth;
                     if ((uint)arrayX >= (uint)width)
@@ -118,7 +128,12 @@ namespace ComfySentinel.Services
                             && prefabHash != GoblinShamanPrefabHash
                             && prefabHash != GoblinBrutePrefabHash
                             && prefabHash != CoinsPrefabHash
-                            && prefabHash != BlackMetalScrapPrefabHash)
+                            && prefabHash != BlackMetalScrapPrefabHash
+                            && prefabHash != RubyPrefabHash
+                            && prefabHash != AmberPrefabHash
+                            && prefabHash != AmberPearlPrefabHash
+                            && prefabHash != SilverNecklacePrefabHash
+                            && prefabHash != GoblinTotemPrefabHash)
                         {
                             continue;
                         }
@@ -138,6 +153,15 @@ namespace ComfySentinel.Services
                             int stack = zdo.GetInt(ZDOVars.s_stack, 1);
                             blackMetal += stack > 0 ? stack : 1;
                         }
+                        else if (prefabHash == RubyPrefabHash
+                            || prefabHash == AmberPrefabHash
+                            || prefabHash == AmberPearlPrefabHash
+                            || prefabHash == SilverNecklacePrefabHash
+                            || prefabHash == GoblinTotemPrefabHash)
+                        {
+                            int stack = zdo.GetInt(ZDOVars.s_stack, 1);
+                            valuables += stack > 0 ? stack : 1;
+                        }
                         else if (prefabHash == GoblinPrefabHash)
                         {
                             goblins++;
@@ -154,7 +178,7 @@ namespace ComfySentinel.Services
                 }
             }
 
-            result = new ScanResult(goblins, shamans, brutes, coins, blackMetal);
+            result = new ScanResult(goblins, shamans, brutes, coins, blackMetal, valuables);
             return true;
         }
     }

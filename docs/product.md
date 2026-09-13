@@ -60,7 +60,7 @@ ComfySentinel is not intended to:
 
 ## Player journey
 
-1. The player successfully picks up a `GoblinTotem` that Valheim has not marked as previously picked up.
+1. The player successfully picks up a Fuling Totem that Valheim has not marked as previously picked up.
 2. The card appears beneath the minimap and adds the per-totem grant without exceeding the storage cap.
 3. The player can continue fighting, kiting, or collecting loot without an automatic scan.
 4. When ready, the player returns within the configured radius of the newest eligible totem pickup position and presses the configured key.
@@ -94,7 +94,9 @@ The live and saved summaries only display nonzero rows. If every tracked categor
 
 One snapshot reports matching local ZDOs whose positions fall inside a circle centered on the newest eligible totem pickup position.
 
-| UI row | Valheim prefab | Count semantics |
+Valheim's code still uses legacy `Goblin*` prefab identifiers for Fulings. These are implementation identifiers only; every player-facing ComfySentinel label uses the correct Fuling terminology.
+
+| UI row | Valheim internal prefab ID | Count semantics |
 | --- | --- | --- |
 | Fulings | `Goblin` | One per matching ZDO |
 | Shamans | `GoblinShaman` | One per matching ZDO |
@@ -111,7 +113,7 @@ The final snapshot is authoritative for the card and completion log. Earlier pul
 ### Arming
 
 - Only a successful `Humanoid.Pickup` by `Player.m_localPlayer` can grant checks.
-- The loose item's drop prefab must have the stable hash of `GoblinTotem`.
+- The loose item's drop prefab must identify Valheim's Fuling Totem.
 - Valheim's `ItemData.m_pickedUp` flag must still be false before the pickup. Pedestal-spawned and enemy-dropped totems qualify; inventory items re-dropped by a player do not.
 - The loose totem's position is captured before Valheim destroys the world object.
 - Each qualifying item in the loose stack grants `MaxSonarCharges`, capped by `MaxStoredSonarCharges`.

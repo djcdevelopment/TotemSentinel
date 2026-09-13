@@ -15,7 +15,8 @@ namespace ComfySentinel.HUD
             Complete,
             OutOfRange,
             Depleted,
-            Unavailable
+            Unavailable,
+            Cursed
         }
 
         private static readonly Vector3[] MapCorners = new Vector3[4];
@@ -38,6 +39,9 @@ namespace ComfySentinel.HUD
         private static float _suspendedAt;
         private static float _stateStarted;
         private static float _finalScanStarted = -1.0f;
+        private static bool _isGreedScan;
+        private static float _cursedUntil;
+        private static float _cursedStarted;
         private static GUIStyle _titleStyle;
         private static GUIStyle _mainStyle;
         private static GUIStyle _detailStyle;
@@ -58,8 +62,9 @@ namespace ComfySentinel.HUD
             SetState(PanelState.Ready);
         }
 
-        internal static void BeginScan(SonarScanner.ScanResult result, int charges)
+        internal static void BeginScan(SonarScanner.ScanResult result, int charges, bool isGreed = false)
         {
+            _isGreedScan = isGreed;
             _resultBeforeScan = _result;
             _hadResultBeforeScan = _hasResult;
             _hasScanBackup = true;
@@ -67,6 +72,14 @@ namespace ComfySentinel.HUD
             _hasResult = true;
             _dismissed = false;
             SetState(PanelState.Scanning);
+        }
+
+        internal static void TriggerCursed(float duration)
+        {
+            _cursedStarted = Time.unscaledTime;
+            _cursedUntil = Time.unscaledTime + duration;
+            _dismissed = false;
+            SetState(PanelState.Cursed);
         }
 
         internal static void UpdateScan(SonarScanner.ScanResult result)
@@ -167,6 +180,9 @@ namespace ComfySentinel.HUD
             _state = PanelState.Hidden;
             _stateStarted = 0.0f;
             _finalScanStarted = -1.0f;
+            _isGreedScan = false;
+            _cursedUntil = 0f;
+            _cursedStarted = 0f;
         }
 
         internal static void Draw(bool preview)
@@ -239,9 +255,17 @@ namespace ComfySentinel.HUD
                     break;
                 case PanelState.Scanning:
                     float remaining = Mathf.Max(0.0f, GetStateDuration() - (Time.unscaledTime - _stateStarted));
-                    GUI.Label(titleRect, "SCANNING", _titleStyle);
+                    string scanTitle = _isGreedScan ? "GREED SCAN" : "SCANNING";
+                    string scanDetail = _isGreedScan ? "3x WIDE LOOT SEARCH" : "LISTENING ACROSS THE CAMP";
+                    GUI.Label(titleRect, scanTitle, _titleStyle);
                     GUI.Label(mainRect, $"{remaining:0}s", _mainStyle);
-                    GUI.Label(detailRect, "LISTENING ACROSS THE CAMP", _detailStyle);
+                    GUI.Label(detailRect, scanDetail, _detailStyle);
+                    break;
+                case PanelState.Cursed:
+                    float cursedRemaining = Mathf.Max(0.0f, _cursedUntil - Time.unscaledTime);
+                    GUI.Label(titleRect, "CURSED!", _titleStyle);
+                    GUI.Label(mainRect, $"{cursedRemaining:0}s", _mainStyle);
+                    GUI.Label(detailRect, "HORDE ALERTED ACROSS CAMP", _detailStyle);
                     break;
                 case PanelState.Found:
                     GUI.Label(titleRect, "FULINGS FOUND", _titleStyle);
@@ -295,7 +319,7 @@ namespace ComfySentinel.HUD
             GUI.Label(mainRect, chargeText, _mainStyle);
             _mainStyle.richText = false;
 
-            GUI.Label(detailRect, $"PRESS \"{ComfySentinelPlugin.PingHotkey.Value}\" TO CHECK", _detailStyle);
+            GUI.Label(detailRect, $"\"{ComfySentinelPlugin.PingHotkey.Value}\" CHECK  ·  SHIFT GREED", _detailStyle);
         }
 
         private static void DrawSummary(Rect card, float scale)
@@ -313,6 +337,7 @@ namespace ComfySentinel.HUD
             DrawSummaryRow(card.x + inset, top, width, rowHeight, ref row, "BRUTES", _result.Brutes);
             DrawSummaryRow(card.x + inset, top, width, rowHeight, ref row, "COINS", _result.Coins);
             DrawSummaryRow(card.x + inset, top, width, rowHeight, ref row, "BLACK METAL", _result.BlackMetal);
+            DrawSummaryRow(card.x + inset, top, width, rowHeight, ref row, "VALUABLES", _result.Valuables);
 
             if (row == 0)
             {
@@ -370,7 +395,11 @@ namespace ComfySentinel.HUD
 
             float elapsed = Time.unscaledTime - _stateStarted;
             float stateDuration = GetStateDuration();
-            if ((_state == PanelState.Found || _state == PanelState.Clear) && elapsed >= stateDuration)
+            if (_state == PanelState.Cursed && Time.unscaledTime >= _cursedUntil)
+            {
+                SetState(ComfySentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
+            }
+            else if ((_state == PanelState.Found || _state == PanelState.Clear) && elapsed >= stateDuration)
             {
                 SetState(ComfySentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
             }
@@ -396,7 +425,8 @@ namespace ComfySentinel.HUD
                 || _state == PanelState.Found
                 || _state == PanelState.Clear
                 || _state == PanelState.Complete
-                || _state == PanelState.Depleted;
+                || _state == PanelState.Depleted
+                || _state == PanelState.Cursed;
         }
 
         private static Rect GetCardRect(bool showSummary)
@@ -440,6 +470,7 @@ namespace ComfySentinel.HUD
             rows += _result.Brutes > 0 ? 1 : 0;
             rows += _result.Coins > 0 ? 1 : 0;
             rows += _result.BlackMetal > 0 ? 1 : 0;
+            rows += _result.Valuables > 0 ? 1 : 0;
             return rows;
         }
 
@@ -447,8 +478,10 @@ namespace ComfySentinel.HUD
         {
             switch (_state)
             {
+                case PanelState.Cursed:
+                    return RedColor;
                 case PanelState.Scanning:
-                    return OrangeColor;
+                    return _isGreedScan ? GoldColor : OrangeColor;
                 case PanelState.Found:
                     return RedColor;
                 case PanelState.Clear:

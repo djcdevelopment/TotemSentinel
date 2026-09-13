@@ -122,7 +122,7 @@ Open:
 A completed scan writes one summary similar to:
 
 ```text
-[ComfySentinel] Camp scan complete origin=(0.0,0.0,0.0) distance=12.3m radius=64.0m goblins=0 shamans=0 brutes=0 fulings=0 coins=7 blackMetal=11 charges=2 pulses=11 scanCpu=0.420ms source=local-zdo.
+[ComfySentinel] Camp scan complete origin=(0.0,0.0,0.0) distance=12.3m radius=64.0m fulings=0 coins=7 blackMetal=11 charges=2 pulses=11 scanCpu=0.420ms source=local-zdo.
 ```
 
 `pulses` is the exact number of successful local snapshots. `scanCpu` is their combined scanner CPU time, not the 10-second wall-clock UI duration.
@@ -139,7 +139,7 @@ It prints the plugin version, session state, charges, radius, hotkey, UI duratio
 
 ### No card after pickup
 
-- Confirm the loose item was a `GoblinTotem` and the local player successfully added it to inventory.
+- Confirm the loose item was a Fuling Totem and the local player successfully added it to inventory.
 - A totem that has already been through any player's inventory is intentionally ineligible.
 - Confirm the initialization line is present in `LogOutput.log`.
 - Look for a ZDO sector-binding compatibility error.

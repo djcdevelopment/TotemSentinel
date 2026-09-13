@@ -6,10 +6,15 @@ namespace ComfySentinel.HUD
 {
     internal static class SonarPresenter
     {
-        internal static void BeginScan(Vector3 origin, SonarScanner.ScanResult result, int charges)
+        internal static void BeginScan(Vector3 origin, SonarScanner.ScanResult result, int charges, bool isGreed = false)
         {
             PlayPingEffect(origin);
-            SonarAbilityPanel.BeginScan(result, charges);
+            SonarAbilityPanel.BeginScan(result, charges, isGreed);
+        }
+
+        internal static void TriggerCursed(float duration)
+        {
+            SonarAbilityPanel.TriggerCursed(duration);
         }
 
         internal static void CompleteScan(SonarScanner.ScanResult result, int charges)

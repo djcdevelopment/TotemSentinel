@@ -39,7 +39,7 @@ The dotted server-to-client flow is owned by Valheim. ComfySentinel does not ini
 
 ```mermaid
 flowchart TD
-    source[Pedestal or enemy produces loose GoblinTotem]
+    source[Pedestal or enemy produces loose Fuling Totem]
     pickup[Local player successfully picks up ItemDrop]
     provenance{ItemData.m_pickedUp was false?}
     reject[Do not grant: player-thrown or previously held]
