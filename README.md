@@ -1,10 +1,10 @@
-﻿# ComfySentinel
+﻿# TotemSentinel
 
-[![Development: AI-Assisted](https://img.shields.io/badge/Development-AI--Assisted-blueviolet.svg)](https://github.com/djcdevelopment/ComfySentinel)
-[![Valheim: 1.0 Compatible](https://img.shields.io/badge/Valheim-1.0%20Compatible-brightgreen.svg)](https://github.com/djcdevelopment/ComfySentinel)
+[![Development: AI-Assisted](https://img.shields.io/badge/Development-AI--Assisted-blueviolet.svg)](https://github.com/djcdevelopment/TotemSentinel)
+[![Valheim: 1.0 Compatible](https://img.shields.io/badge/Valheim-1.0%20Compatible-brightgreen.svg)](https://github.com/djcdevelopment/TotemSentinel)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-ComfySentinel is a standalone client-side BepInEx mod for Valheim that turns newly discovered Fuling Totems into a tactical, player-controlled camp-check radar and wide treasure search.
+TotemSentinel is a standalone client-side BepInEx mod for Valheim that turns newly discovered Fuling Totems into a tactical, player-controlled camp-check radar and wide treasure search.
 
 The first successful pickup of a world- or enemy-spawned Fuling Totem grants three camp checks (bankable up to nine). It does not scan immediately, allowing players to finish combat before choosing when to sweep.
 
@@ -14,7 +14,7 @@ The first successful pickup of a world- or enemy-spawned Fuling Totem grants thr
 
 > **Values replace • They do not accumulate.**
 
-![ComfySentinel Live Counts Clearing Flow](docs/images/live-clear-flow.png)
+![TotemSentinel Live Counts Clearing Flow](docs/images/live-clear-flow.png)
 
 1. **Live Pulse (3s)**: Tapping `V` spends one check and initiates a 3-second live pulse beneath the minimap.
 2. **Real-time Reaction**: As enemies fall or loot is gathered, live sector memory updates dynamically.
@@ -64,7 +64,7 @@ Hold **`LeftShift`** while pressing **`V`** to trigger **Greed's Gambit**—a hi
 
 ## Configuration
 
-Settings are saved in `BepInEx/config/comfy.mods.comfysentinel.cfg`:
+Settings are saved in `BepInEx/config/djcdevelopment.totemsentinel.cfg`:
 
 | Setting | Default | Description |
 | :--- | :---: | :--- |

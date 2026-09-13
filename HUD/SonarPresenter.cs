@@ -1,8 +1,8 @@
-using System;
-using ComfySentinel.Services;
+﻿using System;
+using TotemSentinel.Services;
 using UnityEngine;
 
-namespace ComfySentinel.HUD
+namespace TotemSentinel.HUD
 {
     internal static class SonarPresenter
     {
@@ -44,21 +44,21 @@ namespace ComfySentinel.HUD
                 ZNetScene scene = ZNetScene.instance;
                 if (scene == null)
                 {
-                    ZLog.LogWarning($"[{ComfySentinelPlugin.PluginName}] ZNetScene was unavailable for the sonar effect.");
+                    ZLog.LogWarning($"[{TotemSentinelPlugin.PluginName}] ZNetScene was unavailable for the sonar effect.");
                     return;
                 }
 
                 GameObject effectPrefab = scene.GetPrefab("vfx_WishbonePing");
                 if (effectPrefab == null)
                 {
-                    ZLog.LogWarning($"[{ComfySentinelPlugin.PluginName}] Could not find vfx_WishbonePing.");
+                    ZLog.LogWarning($"[{TotemSentinelPlugin.PluginName}] Could not find vfx_WishbonePing.");
                     return;
                 }
 
                 if (effectPrefab.GetComponentInChildren<ZNetView>(includeInactive: true) != null)
                 {
                     ZLog.LogWarning(
-                        $"[{ComfySentinelPlugin.PluginName}] Skipped networked vfx_WishbonePing to preserve local-only scanning.");
+                        $"[{TotemSentinelPlugin.PluginName}] Skipped networked vfx_WishbonePing to preserve local-only scanning.");
                     return;
                 }
 
@@ -66,9 +66,10 @@ namespace ComfySentinel.HUD
             }
             catch (Exception exception)
             {
-                ZLog.LogError($"[{ComfySentinelPlugin.PluginName}] Failed to play the sonar effect: {exception}");
+                ZLog.LogError($"[{TotemSentinelPlugin.PluginName}] Failed to play the sonar effect: {exception}");
             }
         }
 
     }
 }
+

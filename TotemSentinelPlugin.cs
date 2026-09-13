@@ -1,20 +1,20 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using BepInEx;
 using BepInEx.Configuration;
-using ComfySentinel.Commands;
-using ComfySentinel.HUD;
-using ComfySentinel.Services;
+using TotemSentinel.Commands;
+using TotemSentinel.HUD;
+using TotemSentinel.Services;
 using HarmonyLib;
 using UnityEngine;
 
-namespace ComfySentinel
+namespace TotemSentinel
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-    public sealed class ComfySentinelPlugin : BaseUnityPlugin
+    public sealed class TotemSentinelPlugin : BaseUnityPlugin
     {
-        public const string PluginGuid = "comfy.mods.comfysentinel";
-        public const string PluginName = "ComfySentinel";
+        public const string PluginGuid = "djcdevelopment.totemsentinel";
+        public const string PluginName = "TotemSentinel";
         public const string PluginVersion = "1.5.0";
 
         private const float ScanPulseInterval = 1.0f;
@@ -131,7 +131,7 @@ namespace ComfySentinel
             try
             {
                 _harmony = new Harmony(PluginGuid);
-                _harmony.PatchAll(typeof(ComfySentinelPlugin).Assembly);
+                _harmony.PatchAll(typeof(TotemSentinelPlugin).Assembly);
                 TotemAlertCommands.Register();
                 _patchesApplied = true;
                 ZLog.Log(
@@ -505,3 +505,5 @@ namespace ComfySentinel
         }
     }
 }
+
+

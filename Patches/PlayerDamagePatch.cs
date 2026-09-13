@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
 
-namespace ComfySentinel.Patches
+namespace TotemSentinel.Patches
 {
     [HarmonyPatch(typeof(Character), nameof(Character.ApplyDamage))]
     internal static class PlayerDamagePatch
@@ -12,10 +12,11 @@ namespace ComfySentinel.Patches
                 return;
             }
 
-            if (hit.GetTotalDamage() > 0.05f && ComfySentinelPlugin.IsGreedActive)
+            if (hit.GetTotalDamage() > 0.05f && TotemSentinelPlugin.IsGreedActive)
             {
-                ComfySentinelPlugin.TriggerGreedRetribution(Player.m_localPlayer);
+                TotemSentinelPlugin.TriggerGreedRetribution(Player.m_localPlayer);
             }
         }
     }
 }
+

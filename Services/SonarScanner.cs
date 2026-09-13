@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
-namespace ComfySentinel.Services
+namespace TotemSentinel.Services
 {
     internal static class SonarScanner
     {
@@ -58,7 +58,7 @@ namespace ComfySentinel.Services
             catch (Exception exception)
             {
                 _initialized = false;
-                ZLog.LogError($"[{ComfySentinelPlugin.PluginName}] Could not bind ZDOMan sector fields: {exception}");
+                ZLog.LogError($"[{TotemSentinelPlugin.PluginName}] Could not bind ZDOMan sector fields: {exception}");
                 return false;
             }
         }
@@ -183,3 +183,4 @@ namespace ComfySentinel.Services
         }
     }
 }
+

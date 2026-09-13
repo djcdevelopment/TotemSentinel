@@ -1,7 +1,7 @@
-using ComfySentinel.Services;
+﻿using TotemSentinel.Services;
 using UnityEngine;
 
-namespace ComfySentinel.HUD
+namespace TotemSentinel.HUD
 {
     internal static class SonarAbilityPanel
     {
@@ -114,7 +114,7 @@ namespace ComfySentinel.HUD
             }
 
             _hasScanBackup = false;
-            SetState(ComfySentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Hidden);
+            SetState(TotemSentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Hidden);
         }
 
         internal static void Suspend()
@@ -144,7 +144,7 @@ namespace ComfySentinel.HUD
             _suspended = false;
             _suspendedAt = 0.0f;
             SetState(
-                ComfySentinelPlugin.ActiveSonarCharges > 0
+                TotemSentinelPlugin.ActiveSonarCharges > 0
                     ? PanelState.Ready
                     : (_hasResult ? PanelState.Complete : PanelState.Hidden));
         }
@@ -195,7 +195,7 @@ namespace ComfySentinel.HUD
             UpdateState();
 
             bool hasUsableSession =
-                ComfySentinelPlugin.HasActiveSonarSession && ComfySentinelPlugin.ActiveSonarCharges > 0;
+                TotemSentinelPlugin.HasActiveSonarSession && TotemSentinelPlugin.ActiveSonarCharges > 0;
             if (!preview && (_dismissed || (_state == PanelState.Hidden && !hasUsableSession)))
             {
                 return;
@@ -279,13 +279,13 @@ namespace ComfySentinel.HUD
                     break;
                 case PanelState.Complete:
                     GUI.Label(titleRect, "CHECKS COMPLETE", _titleStyle);
-                    GUI.Label(mainRect, $"0 / {ComfySentinelPlugin.MaximumStoredSonarCharges}", _mainStyle);
+                    GUI.Label(mainRect, $"0 / {TotemSentinelPlugin.MaximumStoredSonarCharges}", _mainStyle);
                     GUI.Label(detailRect, $"CLOSES IN {FormatFinalTimeRemaining()}", _detailStyle);
                     DrawCloseButton(card, scale);
                     break;
                 case PanelState.OutOfRange:
                     GUI.Label(titleRect, "OUT OF RANGE", _titleStyle);
-                    GUI.Label(mainRect, $"> {ComfySentinelPlugin.ScanRadius.Value:0}m", _mainStyle);
+                    GUI.Label(mainRect, $"> {TotemSentinelPlugin.ScanRadius.Value:0}m", _mainStyle);
                     GUI.Label(detailRect, "RETURN TO THE TOTEM'S CAMP", _detailStyle);
                     break;
                 case PanelState.Depleted:
@@ -308,8 +308,8 @@ namespace ComfySentinel.HUD
 
         private static void DrawReady(Rect titleRect, Rect mainRect, Rect detailRect)
         {
-            int charges = ComfySentinelPlugin.ActiveSonarCharges;
-            int maximum = ComfySentinelPlugin.MaximumStoredSonarCharges;
+            int charges = TotemSentinelPlugin.ActiveSonarCharges;
+            int maximum = TotemSentinelPlugin.MaximumStoredSonarCharges;
             GUI.Label(titleRect, "CAMP CHECKS", _titleStyle);
 
             _mainStyle.richText = true;
@@ -319,7 +319,7 @@ namespace ComfySentinel.HUD
             GUI.Label(mainRect, chargeText, _mainStyle);
             _mainStyle.richText = false;
 
-            GUI.Label(detailRect, $"\"{ComfySentinelPlugin.PingHotkey.Value}\" CHECK  ·  SHIFT GREED", _detailStyle);
+            GUI.Label(detailRect, $"\"{TotemSentinelPlugin.PingHotkey.Value}\" CHECK  ·  SHIFT GREED", _detailStyle);
         }
 
         private static void DrawSummary(Rect card, float scale)
@@ -374,7 +374,7 @@ namespace ComfySentinel.HUD
             {
                 _dismissed = true;
                 SetState(PanelState.Hidden);
-                ZLog.Log($"[{ComfySentinelPlugin.PluginName}] Final camp-check summary dismissed by the player.");
+                ZLog.Log($"[{TotemSentinelPlugin.PluginName}] Final camp-check summary dismissed by the player.");
             }
         }
 
@@ -385,7 +385,7 @@ namespace ComfySentinel.HUD
             {
                 if (_state != PanelState.Hidden)
                 {
-                    ZLog.Log($"[{ComfySentinelPlugin.PluginName}] Final camp-check summary closed after its timer elapsed.");
+                    ZLog.Log($"[{TotemSentinelPlugin.PluginName}] Final camp-check summary closed after its timer elapsed.");
                 }
 
                 _dismissed = true;
@@ -397,15 +397,15 @@ namespace ComfySentinel.HUD
             float stateDuration = GetStateDuration();
             if (_state == PanelState.Cursed && Time.unscaledTime >= _cursedUntil)
             {
-                SetState(ComfySentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
+                SetState(TotemSentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
             }
             else if ((_state == PanelState.Found || _state == PanelState.Clear) && elapsed >= stateDuration)
             {
-                SetState(ComfySentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
+                SetState(TotemSentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
             }
             else if ((_state == PanelState.OutOfRange || _state == PanelState.Unavailable) && elapsed >= stateDuration)
             {
-                SetState(ComfySentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
+                SetState(TotemSentinelPlugin.ActiveSonarCharges > 0 ? PanelState.Ready : PanelState.Complete);
             }
             else if (_state == PanelState.Depleted && elapsed >= stateDuration)
             {
@@ -509,15 +509,15 @@ namespace ComfySentinel.HUD
 
         private static float GetStateDuration()
         {
-            return ComfySentinelPlugin.StateDuration != null
-                ? ComfySentinelPlugin.StateDuration.Value
+            return TotemSentinelPlugin.StateDuration != null
+                ? TotemSentinelPlugin.StateDuration.Value
                 : 10.0f;
         }
 
         private static float GetFinalSummaryDuration()
         {
-            return ComfySentinelPlugin.FinalSummaryDuration != null
-                ? ComfySentinelPlugin.FinalSummaryDuration.Value
+            return TotemSentinelPlugin.FinalSummaryDuration != null
+                ? TotemSentinelPlugin.FinalSummaryDuration.Value
                 : 300.0f;
         }
 
@@ -564,3 +564,4 @@ namespace ComfySentinel.HUD
         }
     }
 }
+

@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ComfySentinel.Commands
+namespace TotemSentinel.Commands
 {
     internal static class TotemAlertCommands
     {
@@ -36,15 +36,15 @@ namespace ComfySentinel.Commands
             bool visible;
             if (args.Length == 1)
             {
-                visible = ComfySentinelPlugin.SetAbilityPreview();
+                visible = TotemSentinelPlugin.SetAbilityPreview();
             }
             else if (string.Equals(args[1], "on", StringComparison.OrdinalIgnoreCase))
             {
-                visible = ComfySentinelPlugin.SetAbilityPreview(true);
+                visible = TotemSentinelPlugin.SetAbilityPreview(true);
             }
             else if (string.Equals(args[1], "off", StringComparison.OrdinalIgnoreCase))
             {
-                visible = ComfySentinelPlugin.SetAbilityPreview(false);
+                visible = TotemSentinelPlugin.SetAbilityPreview(false);
             }
             else if (string.Equals(args[1], "status", StringComparison.OrdinalIgnoreCase))
             {
@@ -57,7 +57,7 @@ namespace ComfySentinel.Commands
             }
 
             args.Context?.AddString(
-                $"ComfySentinel {ComfySentinelPlugin.PluginVersion} is running. Panel preview: {(visible ? "open" : "closed")}.");
+                $"ComfySentinel {TotemSentinelPlugin.PluginVersion} is running. Panel preview: {(visible ? "open" : "closed")}.");
             args.Context?.AddString("Use 'totem 1' to create the test camp and 'totem clear' to remove it.");
             return true;
         }
@@ -106,14 +106,14 @@ namespace ComfySentinel.Commands
                 args.Context?.AddString("ComfySentinel scenario 1 created: totem, three Fuling types, 12 coins, and 8 black metal.");
                 args.Context?.AddString(
                     $"Close the console, pick up the loose totem to add " +
-                    $"{ComfySentinelPlugin.MaxSonarCharges.Value} checks, then press the configured hotkey when ready.");
-                ZLog.Log($"[{ComfySentinelPlugin.PluginName}] Test scenario 1 created with 7 tracked objects.");
+                    $"{TotemSentinelPlugin.MaxSonarCharges.Value} checks, then press the configured hotkey when ready.");
+                ZLog.Log($"[{TotemSentinelPlugin.PluginName}] Test scenario 1 created with 7 tracked objects.");
                 return true;
             }
             catch (Exception exception)
             {
                 ClearTestScenario();
-                ZLog.LogError($"[{ComfySentinelPlugin.PluginName}] Failed to create test scenario 1: {exception}");
+                ZLog.LogError($"[{TotemSentinelPlugin.PluginName}] Failed to create test scenario 1: {exception}");
                 return $"Scenario creation failed: {exception.Message}";
             }
         }
@@ -346,7 +346,7 @@ namespace ComfySentinel.Commands
             SpawnedTestObjects.Clear();
             if (removed > 0)
             {
-                ZLog.Log($"[{ComfySentinelPlugin.PluginName}] Cleared {removed} tracked test scenario objects.");
+                ZLog.Log($"[{TotemSentinelPlugin.PluginName}] Cleared {removed} tracked test scenario objects.");
             }
 
             return removed;
@@ -354,16 +354,17 @@ namespace ComfySentinel.Commands
 
         private static void WriteStatus(Terminal context)
         {
-            context?.AddString($"ComfySentinel {ComfySentinelPlugin.PluginVersion}: running");
+            context?.AddString($"ComfySentinel {TotemSentinelPlugin.PluginVersion}: running");
             context?.AddString(
-                $"Sonar session: {(ComfySentinelPlugin.HasActiveSonarSession ? "active" : "waiting for a totem")}; " +
-                $"charges: {ComfySentinelPlugin.ActiveSonarCharges}/{ComfySentinelPlugin.MaximumStoredSonarCharges}; " +
-                $"per totem: {ComfySentinelPlugin.MaxSonarCharges.Value}; radius: {ComfySentinelPlugin.ScanRadius.Value:0.#}m; " +
-                $"hotkey: {ComfySentinelPlugin.PingHotkey.Value}");
+                $"Sonar session: {(TotemSentinelPlugin.HasActiveSonarSession ? "active" : "waiting for a totem")}; " +
+                $"charges: {TotemSentinelPlugin.ActiveSonarCharges}/{TotemSentinelPlugin.MaximumStoredSonarCharges}; " +
+                $"per totem: {TotemSentinelPlugin.MaxSonarCharges.Value}; radius: {TotemSentinelPlugin.ScanRadius.Value:0.#}m; " +
+                $"hotkey: {TotemSentinelPlugin.PingHotkey.Value}");
             context?.AddString(
-                $"State duration: {ComfySentinelPlugin.StateDuration.Value:0.#}s; " +
-                $"final summary: {ComfySentinelPlugin.FinalSummaryDuration.Value:0.#}s");
+                $"State duration: {TotemSentinelPlugin.StateDuration.Value:0.#}s; " +
+                $"final summary: {TotemSentinelPlugin.FinalSummaryDuration.Value:0.#}s");
             context?.AddString($"Tracked scenario objects: {SpawnedTestObjects.Count}");
         }
     }
 }
+

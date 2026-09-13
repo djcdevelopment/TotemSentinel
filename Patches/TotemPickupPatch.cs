@@ -1,7 +1,7 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using UnityEngine;
 
-namespace ComfySentinel.Patches
+namespace TotemSentinel.Patches
 {
     [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.Pickup), new[] { typeof(GameObject), typeof(bool), typeof(bool) })]
     internal static class TotemPickupPatch
@@ -54,8 +54,9 @@ namespace ComfySentinel.Patches
         {
             if (__state.Eligible && __result)
             {
-                ComfySentinelPlugin.GrantTotemSonar(__state.Origin, __state.TotemCount);
+                TotemSentinelPlugin.GrantTotemSonar(__state.Origin, __state.TotemCount);
             }
         }
     }
 }
+
