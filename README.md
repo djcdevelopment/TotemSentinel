@@ -1,4 +1,4 @@
-﻿# TotemSentinel
+# TotemSentinel
 
 [![Development: AI-Assisted](https://img.shields.io/badge/Development-AI--Assisted-blueviolet.svg)](https://github.com/djcdevelopment/TotemSentinel)
 [![Valheim: 1.0 Compatible](https://img.shields.io/badge/Valheim-1.0%20Compatible-brightgreen.svg)](https://github.com/djcdevelopment/TotemSentinel)
