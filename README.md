@@ -14,7 +14,7 @@ The first successful pickup of a world- or enemy-spawned Fuling Totem grants thr
 
 > **Values replace • They do not accumulate.**
 
-![TotemSentinel Live Counts Clearing Flow](docs/images/live-clear-flow.png)
+![TotemSentinel Live Counts Clearing Flow](https://raw.githubusercontent.com/djcdevelopment/TotemSentinel/main/docs/images/live-clear-flow.png)
 
 1. **Live Pulse (3s)**: Tapping `V` spends one check and initiates a 3-second live pulse beneath the minimap.
 2. **Real-time Reaction**: As enemies fall or loot is gathered, live sector memory updates dynamically.

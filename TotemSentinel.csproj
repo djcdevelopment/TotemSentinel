@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>TotemSentinel</RootNamespace>
     <AssemblyName>TotemSentinel</AssemblyName>
-    <Version>1.5.0</Version>
+    <Version>1.5.1</Version>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
