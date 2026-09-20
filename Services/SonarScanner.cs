@@ -42,7 +42,6 @@ namespace TotemSentinel.Services
 
         private static AccessTools.FieldRef<ZDOMan, List<ZDO>[]> _objectsBySectorRef;
         private static AccessTools.FieldRef<ZDOMan, int> _widthRef;
-        private static AccessTools.FieldRef<ZDOMan, int> _halfWidthRef;
         private static bool _initialized;
 
         internal static bool Initialize()
@@ -51,7 +50,6 @@ namespace TotemSentinel.Services
             {
                 _objectsBySectorRef = AccessTools.FieldRefAccess<ZDOMan, List<ZDO>[]>("m_objectsBySector");
                 _widthRef = AccessTools.FieldRefAccess<ZDOMan, int>("m_width");
-                _halfWidthRef = AccessTools.FieldRefAccess<ZDOMan, int>("m_halfWidth");
                 _initialized = true;
                 return true;
             }
@@ -75,7 +73,6 @@ namespace TotemSentinel.Services
 
             List<ZDO>[] objectsBySector = _objectsBySectorRef(zdoMan);
             int width = _widthRef(zdoMan);
-            int halfWidth = _halfWidthRef(zdoMan);
             if (objectsBySector == null || width <= 0 || objectsBySector.Length != width * width)
             {
                 return false;
@@ -94,22 +91,26 @@ namespace TotemSentinel.Services
 
             for (int sectorY = centerSector.y - sectorRadius; sectorY <= centerSector.y + sectorRadius; sectorY++)
             {
-                int arrayY = sectorY + halfWidth;
-                if ((uint)arrayY >= (uint)width)
+                int halfWidth = width / 2;
+                if (sectorY < -halfWidth || sectorY >= halfWidth)
                 {
                     continue;
                 }
 
-                int rowStart = arrayY * width;
                 for (int sectorX = centerSector.x - sectorRadius; sectorX <= centerSector.x + sectorRadius; sectorX++)
                 {
-                    int arrayX = sectorX + halfWidth;
-                    if ((uint)arrayX >= (uint)width)
+                    if (sectorX < -halfWidth || sectorX >= halfWidth)
                     {
                         continue;
                     }
 
-                    List<ZDO> sectorObjects = objectsBySector[rowStart + arrayX];
+                    uint sectorIndex = ZoneSystem.SectorToIndex(sectorX, sectorY).Sector;
+                    if (sectorIndex >= objectsBySector.Length)
+                    {
+                        continue;
+                    }
+
+                    List<ZDO> sectorObjects = objectsBySector[sectorIndex];
                     if (sectorObjects == null)
                     {
                         continue;

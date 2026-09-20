@@ -1,0 +1,29 @@
+[config]
+schemaVersion = '0.0.1'
+
+[package]
+namespace = 'djcdevelopment'
+name = 'TotemSentinel'
+versionNumber = '1.5.2'
+description = "Valheim 1.0-1.0.15 Fuling Totem camp radar and Greed's Gambit loot search with risk-vs-reward retribution."
+websiteUrl = 'https://github.com/djcdevelopment/TotemSentinel'
+containsNsfwContent = false
+
+[package.dependencies]
+denikson-BepInExPack_Valheim = '5.4.2202'
+
+[build]
+icon = './icon.png'
+readme = './README.md'
+outdir = './dist'
+
+[[build.copy]]
+source = './bin/Release/TotemSentinel.dll'
+target = 'TotemSentinel.dll'
+
+[publish]
+repository = 'https://thunderstore.io'
+communities = [ 'valheim' ]
+
+[publish.categories]
+valheim = [ 'mods', 'client-side', 'building' ]

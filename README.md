@@ -1,8 +1,11 @@
 # TotemSentinel
 
 [![Development: AI-Assisted](https://img.shields.io/badge/Development-AI--Assisted-blueviolet.svg)](https://github.com/djcdevelopment/TotemSentinel)
-[![Valheim: 1.0 Compatible](https://img.shields.io/badge/Valheim-1.0%20Compatible-brightgreen.svg)](https://github.com/djcdevelopment/TotemSentinel)
+[![Valheim: 1.0.15 Verified](https://img.shields.io/badge/Valheim-1.0.15%20verified-blue.svg)](https://github.com/djcdevelopment/TotemSentinel)
+[![Version: 1.5.2](https://img.shields.io/badge/Version-1.5.2-brightgreen.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Compatibility:** Valheim 1.0.0-1.0.15; latest build, Harmony target, ZDO field, and isolated boot verification completed on 1.0.15. See the [fleet compatibility evidence](https://github.com/djcdevelopment/deepnorthtesting/blob/main/docs/compatibility/valheim-1.0.15.md).
 
 TotemSentinel is a standalone client-side BepInEx mod for Valheim that turns newly discovered Fuling Totems into a tactical, player-controlled camp-check radar and wide treasure search.
 
