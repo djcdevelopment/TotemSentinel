@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using BepInEx;
 using BepInEx.Configuration;
@@ -15,7 +15,7 @@ namespace TotemSentinel
     {
         public const string PluginGuid = "djcdevelopment.totemsentinel";
         public const string PluginName = "TotemSentinel";
-        public const string PluginVersion = "1.5.2";
+        public const string PluginVersion = "1.5.3";
 
         private const float ScanPulseInterval = 1.0f;
 
