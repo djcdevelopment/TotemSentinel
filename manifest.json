@@ -1,8 +1,8 @@
 {
   "name": "TotemSentinel",
-  "version_number": "1.5.3",
+  "version_number": "1.5.4",
   "website_url": "https://github.com/djcdevelopment/TotemSentinel",
-  "description": "Valheim 1.0-1.0.16 Fuling Totem camp radar and Greed's Gambit loot search with risk-vs-reward retribution.",
+  "description": "Valheim 1.0-1.0.17 Fuling Totem camp radar and Greed's Gambit loot search with risk-vs-reward retribution.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2202"
   ]
