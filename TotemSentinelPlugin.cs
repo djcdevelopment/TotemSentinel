@@ -15,7 +15,7 @@ namespace TotemSentinel
     {
         public const string PluginGuid = "djcdevelopment.totemsentinel";
         public const string PluginName = "TotemSentinel";
-        public const string PluginVersion = "1.5.4";
+        public const string PluginVersion = "1.5.5";
 
         private const float ScanPulseInterval = 1.0f;
 
